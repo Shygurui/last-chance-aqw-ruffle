@@ -1,0 +1,44 @@
+
+name: Build Mugetsu
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 240
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Instalar Rust
+        shell: pwsh
+        run: |
+          $version = (Get-Content mugetsu-1.5.1/source/RUST_VERSION -Raw).Trim()
+          rustup toolchain install $version --profile minimal --no-self-update
+          rustup default $version
+          rustc --version
+
+      - name: Compilar Mugetsu
+        shell: pwsh
+        run: ./source/build.ps1
+        working-directory: mugetsu-1.5.1
+
+      - name: Disponibilizar executável
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mugetsu-sem-AVX2
+          path: mugetsu-1.5.1/source/build/out/Mugetsu.exe
